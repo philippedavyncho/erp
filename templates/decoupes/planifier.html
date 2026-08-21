@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="mb-4">
+  <div class="page-eyebrow">Préparation</div>
+  <h1 class="page-title h2 mb-2">Planifier les découpes</h1>
+  <p class="page-subtitle mb-0">Prévisualisez les pièces, puis choisissez si les chutes disponibles doivent être réemployées.</p>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-7">
+    <form method="post" class="card">
+      {% csrf_token %}
+      {% if chute_preselectionnee %}<input type="hidden" name="chute_0" value="{{ chute_preselectionnee.pk }}">{% endif %}
+      <div class="card-header-clean"><h2 class="h5 mb-0">Paramètres de découpe</h2></div>
+      <div class="card-body p-4">
+        {% if chute_preselectionnee %}<div class="alert alert-info">Chute sélectionnée : <strong>{{ chute_preselectionnee.numero }}</strong> — {{ chute_preselectionnee.longueur }} × {{ chute_preselectionnee.largeur }} mm. Vérifiez puis calculez le plan.</div>{% endif %}
+        {{ form.as_p }}
+
+        {% if suggestions %}
+          <div class="alert alert-info mt-4" role="status">
+            <strong>Des chutes existantes peuvent réaliser certaines pièces.</strong>
+            Sélectionnez « Utiliser cette chute » pour les retirer du plan de découpe principal, ou conservez « Panneau neuf » pour les ignorer.
+          </div>
+          {% for suggestion in suggestions %}
+            {% if suggestion.candidates %}
+              <div class="border rounded p-3 mb-3 bg-light">
+                <div class="fw-semibold mb-2">Pièce {{ suggestion.longueur }} × {{ suggestion.largeur }} mm</div>
+                <label class="form-label" for="id_chute_{{ suggestion.index }}">Une chute existante permet déjà de réaliser cette pièce. Souhaitez-vous utiliser cette chute ?</label>
+                <select class="form-select" id="id_chute_{{ suggestion.index }}" name="chute_{{ suggestion.index }}">
+                  <option value="">Ignorer : conserver la découpe sur un panneau neuf</option>
+                  {% for chute in suggestion.candidates %}
+                    <option value="{{ chute.pk }}"{% if suggestion.selected_id == chute.pk %} selected{% endif %}>
+                      Utiliser {{ chute.numero }} — {{ chute.longueur }} × {{ chute.largeur }} mm — {{ chute.type_verre }} — ép. {{ chute.epaisseur }} — quantité : 1{% if chute.rotation_necessaire %} — rotation{% endif %}{% if chute.restes_prevus %} — reste : {% for reste in chute.restes_prevus %}{{ reste.longueur }} × {{ reste.largeur }} mm{% if not forloop.last %}, {% endif %}{% endfor %}{% else %} — aucun reste réutilisable{% endif %}
+                    </option>
+                  {% endfor %}
+                </select>
+                <small class="d-block mt-2 text-success"><strong>Meilleur choix :</strong> la première chute de la liste minimise la perte et se rapproche le plus de la pièce demandée.</small>
+                {% if suggestion.candidates|length > 1 %}<small class="text-muted d-block mt-2">{{ suggestion.candidates|length }} chutes compatibles sont proposées, de la moins à la plus génératrice de perte.</small>{% endif %}
+                {% if suggestion.selected_chute %}
+                  <div class="small mt-2 text-success"><strong>Prévision après découpe de {{ suggestion.selected_chute.numero }} :</strong>{% if suggestion.selected_chute.restes_prevus %} {% for reste in suggestion.selected_chute.restes_prevus %}chute de {{ reste.longueur }} × {{ reste.largeur }} mm{% if not forloop.last %}, puis {% endif %}{% endfor %}.{% else %} aucun reste réutilisable ne sera créé.{% endif %}</div>
+                  <div class="consume-option mt-3"><input class="form-check-input" type="checkbox" name="consommer_integralement_{{ suggestion.index }}" value="1" id="id_consommer_integralement_{{ suggestion.index }}"{% if suggestion.consommer_integralement %} checked{% endif %}><label class="consume-option-label" for="id_consommer_integralement_{{ suggestion.index }}"><span class="consume-option-mark" aria-hidden="true">✓</span><span><strong>Consommer entièrement cette chute</strong><small class="consume-option-off">Restes conservés et stockés</small><small class="consume-option-on">Chute entièrement consommée, aucun reste stocké</small></span></label></div>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        <div class="d-flex flex-wrap gap-2 pt-2">
+          <button class="btn btn-primary" name="action" value="previsualiser">Calculer le plan</button>
+          {% if apercu_disponible %}<button class="btn btn-success" name="action" value="valider">Valider et stocker</button>{% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="col-xl-5 d-flex flex-column gap-3 align-items-stretch">
+    <div class="border rounded-3 p-3 bg-light"><div class="d-flex align-items-center gap-2 mb-2"><span class="badge text-bg-primary">i</span><strong class="small">Comment ça fonctionne</strong></div><ol class="small text-muted ps-3 mb-0"><li class="mb-1">Sélectionnez le panneau et l’emplacement de stockage.</li><li class="mb-1">Indiquez une découpe par ligne, par exemple <strong>1800 × 900</strong>.</li><li>Prévisualisez le plan, puis validez pour créer les chutes.</li></ol></div>
+    <div class="border rounded-3 p-3"><div class="fw-semibold small mb-2">Réemploi intelligent</div><p class="small text-muted mb-0">Lorsqu’une chute disponible convient à une pièce, elle est proposée automatiquement. Vous pouvez l’utiliser pour éviter d’entamer un panneau neuf ou la conserver pour une autre commande.</p></div>
+    <div class="border rounded-3 p-3"><div class="fw-semibold small mb-2">Lire le résultat</div><p class="small text-muted mb-0">Les rectangles colorés représentent les pièces à produire. Les zones libres deviennent des chutes réutilisables, enregistrées à l’emplacement choisi après validation.</p></div>
+    <div class="border rounded-3 p-3 bg-light"><div class="fw-semibold small mb-2">Avant de valider</div><p class="small text-muted mb-0">Vérifiez les dimensions, les chutes sélectionnées et l’emplacement. La validation met à jour le stock et conserve la trace de chaque découpe.</p></div>
+  </div>
+</div>
+
+{% if apercu_disponible %}
+  {% for plan_chute in plans_chutes %}
+  <div class="card mt-4 print-plan">
+    <div class="card-header-clean d-flex align-items-center justify-content-between gap-3"><div><div class="section-label">Plan de découpe de la chute</div><h2 class="h5 mb-0">{{ plan_chute.chute.numero }} — {{ plan_chute.chute.longueur }} × {{ plan_chute.chute.largeur }} mm</h2></div><button type="button" class="btn btn-outline-primary btn-sm print-plan-action" onclick="window.print()">Imprimer le plan</button></div>
+    <div class="card-body">
+      <div class="cut-plan-frame"><svg class="cut-plan" viewBox="0 0 {{ plan_chute.chute.longueur }} {{ plan_chute.chute.largeur }}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Plan de découpe de la chute {{ plan_chute.chute.numero }}">
+        <defs><linearGradient id="pieceGradientChute{{ forloop.counter }}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="55%" stop-color="#2563eb"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs>
+        <g><title>Pièce {{ plan_chute.longueur }} × {{ plan_chute.largeur }} mm</title><rect class="cut-piece" style="fill: url(#pieceGradientChute{{ forloop.counter }})" x="0" y="0" width="{{ plan_chute.plan_longueur }}" height="{{ plan_chute.plan_largeur }}"/><text class="cut-piece-label" x="0" y="0" dx="28" dy="80">{{ plan_chute.longueur }} × {{ plan_chute.largeur }}</text></g>
+      </svg></div>
+      <p class="cut-plan-legend mt-3 mb-0">{% if plan_chute.rotation %}La pièce est tournée pour s’adapter à la chute. {% endif %}{% if plan_chute.consommer_integralement %}La chute sera entièrement consommée : aucun reste ne sera stocké.{% elif plan_chute.restes %}Chutes à stocker : {% for reste in plan_chute.restes %}<strong>{{ reste.longueur }} × {{ reste.largeur }} mm</strong>{% if not forloop.last %}, {% endif %}{% endfor %}.{% else %}Aucune chute réutilisable ne restera après cette découpe.{% endif %}</p>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if panneau_plan %}<div class="card mt-4 print-plan">
+    <div class="card-header-clean d-flex align-items-center justify-content-between gap-3"><div><div class="section-label">Plan de découpe du panneau</div><h2 class="h5 mb-0">{{ panneau_plan.longueur }} × {{ panneau_plan.largeur }} mm</h2></div><button type="button" class="btn btn-outline-primary btn-sm print-plan-action" onclick="window.print()">Imprimer le plan</button></div>
+    <div class="card-body">
+      {% if plan %}
+        <div class="cut-plan-frame"><svg class="cut-plan" viewBox="0 0 {{ panneau_plan.longueur }} {{ panneau_plan.largeur }}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Plan de découpe du panneau">
+          <defs><linearGradient id="pieceGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="55%" stop-color="#2563eb"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs>
+          {% for p in plan %}<g><title>Pièce {{ p.longueur }} × {{ p.largeur }} mm</title><rect class="cut-piece" x="{{ p.x }}" y="{{ p.y }}" width="{{ p.plan_longueur }}" height="{{ p.plan_largeur }}"/><text class="cut-piece-label" x="{{ p.x }}" y="{{ p.y }}" dx="28" dy="80">{{ p.longueur }} × {{ p.largeur }}</text></g>{% endfor %}
+        </svg></div>
+      {% else %}<p class="mb-0 text-success">Toutes les pièces sont affectées à des chutes existantes : aucun panneau neuf ne sera découpé.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header-clean"><h2 class="h5 mb-0">Pièces sur panneau neuf <span class="badge text-bg-primary ms-1">{{ plan|length }}</span></h2></div><ul class="list-group list-group-flush">{% for p in plan %}<li class="list-group-item d-flex justify-content-between"><strong>{{ p.longueur }} × {{ p.largeur }} mm</strong>{% if p.rotation %}<span class="badge text-bg-light">Rotation</span>{% endif %}</li>{% empty %}<li class="list-group-item text-muted">Aucune pièce.</li>{% endfor %}</ul></div></div>
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header-clean"><h2 class="h5 mb-0">Chutes à stocker <span class="badge text-bg-success ms-1">{{ restes|length }}</span></h2></div><ul class="list-group list-group-flush">{% for r in restes %}<li class="list-group-item"><strong>{{ r.longueur }} × {{ r.largeur }} mm</strong></li>{% empty %}<li class="list-group-item text-muted">Aucune chute exploitable.</li>{% endfor %}</ul></div></div>
+  </div>
+  {% endif %}
+{% endif %}
+{% endblock %}

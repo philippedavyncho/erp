@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <div class="page-eyebrow">Traçabilité</div>
+    <h1 class="page-title h2 mb-1">Mouvements des grands panneaux</h1>
+    <p class="page-subtitle mb-0">Suivez à l’écran chaque entrée, sortie et remise en stock.</p>
+  </div>
+  <a href="{% url 'stock_panneaux:liste' %}" class="btn btn-outline-primary">Retour au stock</a>
+</div>
+
+<form method="get" class="card card-body mb-4 movement-filter">
+  <div class="row g-2 align-items-center">
+    <div class="col-md-7">
+      <label for="panneau" class="mb-0">Afficher les mouvements de</label>
+      <select id="panneau" name="panneau" class="form-select">
+        <option value="">Tous les grands panneaux</option>
+        {% for panneau in panneaux %}<option value="{{ panneau.pk }}" {% if panneau_selectionne == panneau.pk|stringformat:'s' %}selected{% endif %}>{{ panneau.reference }} — stock actuel : {{ panneau.quantite_en_stock }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-auto align-self-end"><button class="btn btn-primary">Afficher</button></div>
+  </div>
+</form>
+
+<div class="card mb-4">
+  <div class="card-header-clean d-flex justify-content-between align-items-center">
+    <div><div class="fw-bold">Fil des mouvements</div><small class="text-muted">Les événements les plus récents apparaissent en premier.</small></div>
+    <span class="badge text-bg-primary rounded-pill">{{ mouvements|length }}</span>
+  </div>
+  <div class="card-body"><div class="movement-timeline">
+    {% for mouvement in mouvements %}
+      <article class="movement-item movement-{{ mouvement.type|lower }}">
+        <div class="movement-dot"></div>
+        <div class="movement-content">
+          <div class="d-flex flex-wrap align-items-center gap-2"><span class="fw-bold">{{ mouvement.panneau.reference }}</span><span class="badge {% if mouvement.type == 'ENTREE' %}text-bg-success{% else %}text-bg-primary{% endif %}">{{ mouvement.get_type_display }}</span><span class="text-muted small">{{ mouvement.date|date:"d/m/Y à H:i" }}</span></div>
+          <div class="mt-1">{{ mouvement.origine }} <strong class="ms-1">{% if mouvement.type == 'ENTREE' %}+{% else %}−{% endif %}{{ mouvement.quantite }}</strong></div>
+          <small class="text-muted">Enregistré par {{ mouvement.utilisateur|default:"système" }}</small>
+        </div>
+      </article>
+    {% empty %}<div class="empty-state">Aucun mouvement enregistré pour cette sélection.</div>{% endfor %}
+  </div></div>
+</div>
+
+<div class="card table-card">
+  <div class="card-header-clean"><div class="fw-bold">Planifications</div></div>
+  <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date</th><th>Panneau</th><th>Quantité</th><th>Statut</th><th>Utilisateur</th><th></th></tr></thead><tbody>
+    {% for planification in planifications %}<tr><td>{{ planification.cree_le|date:"d/m/Y H:i" }}</td><td>{{ planification.panneau_stock.reference }}</td><td>{{ planification.quantite }}</td><td>{{ planification.get_statut_display }}</td><td>{{ planification.utilisateur|default:"—" }}</td><td>{% if planification.statut == 'VALIDEE' %}<form method="post" action="{% url 'stock_panneaux:annuler' planification.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Annuler</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="text-muted text-center py-4">Aucune planification enregistrée.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard-stage">
+<section class="dashboard-header dashboard-title-card d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div><div class="page-eyebrow">Atelier vitrerie · Temps réel</div><h1 class="page-title h2 mb-1">Tableau de bord</h1><p class="page-subtitle mb-0">Votre activité, votre stock et vos découpes en un regard.</p></div>
+  <a class="btn dashboard-search" href="/stockage/rechercher/"><span>⌕</span> Recherche intelligente</a>
+</section>
+
+<section class="dashboard-metrics mb-4">
+  <article class="dashboard-metric metric-stock"><span class="dashboard-metric-icon blue">🪟</span><div><span>Stock</span><strong>{{ stock_total }}</strong><small>grands panneaux</small></div></article>
+  <article class="dashboard-metric metric-low"><span class="dashboard-metric-icon amber">⚠</span><div><span>Faible</span><strong>{{ low_stock|length }}</strong><small>sous le seuil</small></div></article>
+  <article class="dashboard-metric metric-cut"><span class="dashboard-metric-icon violet">✂</span><div><span>Découpe</span><strong>{{ decoupes_today }}</strong><small>aujourd’hui</small></div></article>
+  <article class="dashboard-metric metric-offcut"><span class="dashboard-metric-icon green">♻</span><div><span>Chutes</span><strong>{{ offcut_count }}</strong><small>disponibles</small></div></article>
+  <article class="dashboard-metric metric-alert"><span class="dashboard-metric-icon red">!</span><div><span>Alertes</span><strong>{{ alert_count }}</strong><small>à traiter</small></div></article>
+</section>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-7"><section class="card dashboard-card h-100"><div class="card-body"><div class="dashboard-card-title"><span>🪟 Stock de verre</span><a href="/grands-panneaux/">Voir le stock</a></div>{% for item in stock_by_glass %}<div class="stock-row"><div class="d-flex justify-content-between"><strong>{{ item.materiau__designation }}</strong><span>{{ item.quantity }} panneau{{ item.quantity|pluralize:"x" }}</span></div><div class="progress"><div class="progress-bar" style="width: {{ item.percent }}%"></div></div></div>{% empty %}<p class="text-muted mb-0">Aucun grand panneau en stock.</p>{% endfor %}</div></section></div>
+  <div class="col-lg-5"><section class="card dashboard-card h-100"><div class="card-body"><div class="dashboard-card-title"><span>✂ Planification</span><a href="/decoupes/">Planifier</a></div><div class="planning-day">Aujourd’hui</div><div class="planning-stat"><strong>{{ decoupes_today }}</strong><span>découpes réalisées</span></div><div class="planning-line"><span>Surface découpée</span><strong>{{ cut_surface|floatformat:2 }} m²</strong></div><div class="planning-line"><span>Découpes restantes</span><strong>—</strong></div></div></section></div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6"><section class="card dashboard-card h-100"><div class="card-body"><div class="dashboard-card-title"><span>♻ Stock de chutes</span><a href="/stockage/">Consulter</a></div><div class="two-column-stat"><div><strong>{{ offcut_count }}</strong><span>chutes disponibles</span></div><div><strong>{{ offcut_surface|floatformat:2 }} m²</strong><span>surface disponible</span></div><div><strong>{{ reusable_offcuts }}</strong><span>réutilisables</span></div></div></div></section></div>
+  <div class="col-lg-6"><section class="card dashboard-card h-100"><div class="card-body"><div class="dashboard-card-title"><span>📊 Rendement découpe</span></div><div class="yield-grid"><div class="yield-ring" style="--yield: {{ yield_percent }}"><strong>{{ yield_percent }}%</strong><span>rendement</span></div><div><div class="planning-line"><span>Surface utilisée</span><strong>{{ cut_surface|floatformat:2 }} m²</strong></div><div class="planning-line"><span>Déchets du jour</span><strong>{{ waste_surface|floatformat:2 }} m²</strong></div><div class="planning-line"><span>Surface utile</span><strong>{{ cut_surface|floatformat:2 }} m²</strong></div></div></div></div></section></div>
+</div>
+
+<section class="card dashboard-card mb-4"><div class="card-body"><div class="dashboard-card-title"><span>🚨 Alertes</span></div>{% if low_stock %}<div class="alert-list">{% for item in low_stock %}<div class="dashboard-alert"><span>🔴</span><strong>{{ item.reference }}</strong><span>Stock faible : {{ item.quantite_en_stock }} / minimum {{ item.quantite_minimum }}</span></div>{% endfor %}</div>{% else %}<div class="dashboard-ok">✓ Aucun niveau de stock sous le seuil.</div>{% endif %}</div></section>
+
+<section class="card dashboard-card mb-4"><div class="card-body"><div class="dashboard-card-title"><span>Traçabilité des chutes</span><a href="/stockage/">Consulter</a></div><div class="two-column-stat"><div><strong>{{ reserved_offcuts }}</strong><span>réservées</span></div><div><strong>{{ used_offcuts }}</strong><span>utilisées</span></div><div><strong>{{ discarded_offcuts }}</strong><span>au rebut</span></div><div><strong>{{ waste_surface|floatformat:2 }} m²</strong><span>verre au rebut</span></div><div><strong>{{ recent_moves }}</strong><span>déplacements</span></div><div><strong>{{ recent_corrections }}</strong><span>corrections</span></div></div>{% if waste_by_reason %}<div class="small mt-3">Motifs de rebut : {% for item in waste_by_reason %}{{ item.motif }} ({{ item.total }}){% if not forloop.last %}, {% endif %}{% endfor %}</div>{% endif %}</div></section>
+<section class="card dashboard-card"><div class="card-body"><div class="dashboard-card-title"><span>🕐 Activité récente</span><a href="/mouvements/">Tout voir</a></div>{% for item in recent_activity %}<div class="activity-row"><span class="activity-dot {{ item.kind }}"></span><time>{{ item.date|date:"H:i" }}</time><div><strong>{{ item.label }}</strong><span>{{ item.detail }}</span></div></div>{% empty %}<p class="text-muted mb-0">Aucune activité récente.</p>{% endfor %}</div></section>
+</div>
+{% endblock %}

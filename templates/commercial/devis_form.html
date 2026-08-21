@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="document-shell">
+  <header class="document-heading"><div><div class="page-eyebrow">Service commercial</div><h1>Créer un devis</h1><p>Créez l’en-tête, puis ajoutez les lignes, dimensions et prestations.</p></div><div class="document-mark">DV</div></header>
+  <form method="post" class="document-card">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="document-section"><div class="document-section-title"><span>01</span> Référence client</div><div class="document-grid two-fields"><div>{{ form.client.label_tag }}{{ form.client }}{{ form.client.errors }}</div><div>{{ form.demande.label_tag }}{{ form.demande }}{{ form.demande.errors }}</div></div></div>
+    <div class="document-section"><div class="document-section-title"><span>02</span> Conditions commerciales</div><div class="document-grid three-fields"><div>{{ form.validite.label_tag }}{{ form.validite }}{{ form.validite.errors }}</div><div>{{ form.remise.label_tag }}{{ form.remise }}{{ form.remise.errors }}</div><div>{{ form.tva_taux.label_tag }}{{ form.tva_taux }}{{ form.tva_taux.errors }}</div></div></div>
+    <div class="document-section"><div class="document-section-title"><span>03</span> Observations</div>{{ form.observations.label_tag }}{{ form.observations }}{{ form.observations.errors }}</div>
+    <footer class="document-actions"><a href="{% url 'commercial:liste' %}" class="btn btn-outline-secondary">Annuler</a><button class="btn btn-primary">Créer le devis</button></footer>
+  </form>
+</section>
+{% endblock %}

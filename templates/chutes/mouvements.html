@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4"><div><div class="page-eyebrow">Stock des chutes</div><h1 class="page-title h2 mb-1">{{ titre }}</h1><p class="page-subtitle mb-0">{{ description }}</p></div><a class="btn btn-outline-primary" href="{% url 'chutes:liste' %}">Retour à l’inventaire</a></div>
+<nav class="stock-tabs mb-4"><a href="{% url 'chutes:liste' %}">Inventaire</a><a class="{% if type_page == 'entrees' %}active{% endif %}" href="{% url 'chutes:entrees' %}">Entrées</a><a class="{% if type_page == 'sorties' %}active{% endif %}" href="{% url 'chutes:sorties' %}">Sorties</a></nav>
+
+<section class="card table-card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  {% if type_page == 'entrees' %}
+    <thead><tr><th>Date</th><th>Chute</th><th>Dimensions</th><th>Emplacement</th><th>Origine</th><th>Statut</th></tr></thead><tbody>
+    {% for chute in chutes %}<tr><td>{{ chute.date_creation|date:"d/m/Y H:i" }}</td><td class="fw-bold">{{ chute.numero }}<small class="d-block text-muted">{{ chute.type_verre }} · ép. {{ chute.epaisseur }} · {{ chute.teinte }}</small></td><td>{{ chute.longueur }} × {{ chute.largeur }} mm</td><td>{{ chute.emplacement.code }}</td><td>{{ chute.origine|default:"Ajout manuel" }}</td><td><span class="badge {% if chute.etat == 'DISPONIBLE' %}text-bg-success{% else %}text-bg-secondary{% endif %}">{{ chute.get_etat_display }}</span></td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Aucune entrée de chute.</td></tr>{% endfor %}</tbody>
+  {% else %}
+    <thead><tr><th>Date</th><th>Chute utilisée</th><th>Pièce découpée</th><th>Utilisateur</th></tr></thead><tbody>
+    {% for decoupe in decoupes %}<tr><td>{{ decoupe.cree_le|date:"d/m/Y H:i" }}</td><td class="fw-bold">{{ decoupe.chute_source.numero }}</td><td>{{ decoupe.longueur }} × {{ decoupe.largeur }} mm</td><td>{{ decoupe.utilisateur|default:"Système" }}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-4">Aucune sortie de chute.</td></tr>{% endfor %}</tbody>
+  {% endif %}
+</table></div></section>
+{% endblock %}

@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1 class="h3">Historique des mouvements</h1><p class="text-muted">Traçabilité des entrées, découpes et chutes.</p>
+<div class="card shadow-sm"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Date</th><th>Action</th><th>Objet</th><th>Utilisateur</th><th>Commentaire</th></tr></thead><tbody>{% for item in items %}<tr><td>{{ item.date|date:"d/m/Y H:i" }}</td><td><span class="badge text-bg-light">{{ item.action }}</span></td><td>{{ item.objet }}</td><td>{{ item.utilisateur|default:"Système" }}</td><td>{{ item.commentaire }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted py-4">Aucun mouvement.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

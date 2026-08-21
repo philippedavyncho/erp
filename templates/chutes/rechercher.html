@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="mb-4"><div class="page-eyebrow">Recherche intelligente</div><h1 class="page-title h2 mb-2">Trouvez la meilleure chute</h1><p class="page-subtitle mb-0">Les résultats privilégient la chute compatible qui génère le moins de perte.</p></div>
+
+<form method="get" class="card search-card search-card-wide"><div class="card-body"><div class="d-flex align-items-center gap-3 mb-4"><div class="metric-icon">⌕</div><div><h2 class="h5 mb-0">Caractéristiques recherchées</h2><small class="text-muted">Renseignez les quatre critères de votre pièce.</small></div></div><div class="row g-3">{% for field in form %}<div class="col-md-6">{{ field.label_tag }}{{ field }}{% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>{% endfor %}</div><button class="btn btn-primary mt-4">Lancer la recherche</button></div></form>
+
+{% if form.is_bound and form.is_valid %}
+  <div class="d-flex align-items-end justify-content-between mt-5 mb-3"><div><div class="section-label">Résultat</div><h2 class="h4 mb-0">Chutes compatibles</h2></div><span class="location-badge">Triées par perte minimale</span></div>
+  <div class="alert alert-info">Sélectionnez <strong>Utiliser</strong> pour ouvrir la planification. La chute, ses caractéristiques et les dimensions de votre pièce seront déjà renseignées.</div>
+  <div class="card table-card"><div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Chute</th><th>Dimensions</th><th>Emplacement</th><th></th></tr></thead><tbody>
+  {% for chute in resultats %}<tr>
+    <td>{% if forloop.first %}<span class="badge text-bg-danger me-2">Meilleur choix</span>{% endif %}<strong>{{ chute.numero }}</strong><small class="d-block text-muted">{{ chute.type_verre }} · ép. {{ chute.epaisseur }} · {{ chute.teinte }}</small></td>
+    <td><strong>{{ chute.longueur }} × {{ chute.largeur }}</strong><small class="d-block text-muted">millimètres{% if chute.rotation_necessaire %} · rotation{% endif %}</small></td>
+    <td><span class="location-badge">{{ chute.emplacement.code }}</span><small class="d-block text-muted mt-1">Chariot {{ chute.emplacement.chariot }} · Niveau {{ chute.emplacement.niveau }} · Case {{ chute.emplacement.case }}</small></td>
+    <td><a class="btn btn-primary btn-sm" href="{% url 'decoupes:planifier' %}?chute={{ chute.pk }}&longueur={{ form.cleaned_data.longueur }}&largeur={{ form.cleaned_data.largeur }}">Utiliser</a></td>
+  </tr>{% empty %}<tr><td colspan="4"><div class="empty-state"><div class="fs-2 mb-2">⌕</div><strong>Aucune chute compatible</strong><div class="small">Essayez une autre dimension ou utilisez un nouveau panneau.</div></div></td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endif %}
+{% endblock %}

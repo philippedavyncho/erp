@@ -1,0 +1,2 @@
+{% extends 'base.html' %}
+{% block content %}<h1 class="h3">Supprimer {{ panneau.reference }}</h1><p>Cette action supprime la référence de stock si elle ne possède aucun historique.</p><form method="post">{% csrf_token %}<button class="btn btn-danger">Supprimer</button> <a class="btn btn-outline-secondary" href="{% url 'stock_panneaux:liste' %}">Annuler</a></form>{% endblock %}

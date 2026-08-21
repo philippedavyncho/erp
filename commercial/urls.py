@@ -1,0 +1,4 @@
+from django.urls import path
+from . import views
+app_name="commercial"
+urlpatterns=[path("demandes/",views.demandes,name="demandes"),path("demandes/nouvelle/",views.creer_demande,name="creer_demande"),path("demandes/<int:pk>/",views.detail_demande,name="detail_demande"),path("devis/",views.liste,name="liste"),path("devis/nouveau/",views.creer,name="creer"),path("devis/<int:pk>/",views.detail,name="detail"),path("devis/<int:pk>/ligne/",views.ajouter_ligne,name="ajouter_ligne"),path("devis/<int:pk>/statut/<str:statut>/",views.statut,name="statut"),path("devis/<int:pk>/transformer/",views.transformer,name="transformer"),path("devis/<int:pk>/pdf/",views.pdf,name="pdf")]
