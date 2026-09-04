@@ -1,23 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
 <section class="document-shell">
-  <header class="document-heading">
-    <div><div class="page-eyebrow">Service commercial</div><h1>Nouvelle demande de devis</h1><p>Enregistrez précisément le besoin client avant son étude technique.</p></div>
-    <div class="document-mark">DD</div>
-  </header>
+  <header class="document-heading"><div><div class="page-eyebrow">Service commercial</div><h1>Nouvelle demande de devis</h1><p>Qualifiez le besoin client avant de préparer le chiffrage.</p></div><div class="document-mark">DD</div></header>
   <form method="post" class="document-card">{% csrf_token %}
     {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-    <div class="document-section"><div class="document-section-title"><span>01</span> Client et suivi</div>
-      <div class="document-grid two-fields"><div>{{ form.client.label_tag }}{{ form.client }}{{ form.client.errors }}</div><div>{{ form.statut.label_tag }}{{ form.statut }}{{ form.statut.errors }}</div></div>
-    </div>
-    <div class="document-section"><div class="document-section-title"><span>02</span> Besoin exprimé</div>
-      <div>{{ form.description.label_tag }}{{ form.description }}{{ form.description.errors }}</div>
-      <div class="document-grid three-fields"><div>{{ form.dimensions.label_tag }}{{ form.dimensions }}{{ form.dimensions.errors }}</div><div>{{ form.quantite.label_tag }}{{ form.quantite }}{{ form.quantite.errors }}</div><div>{{ form.type_verre.label_tag }}{{ form.type_verre }}{{ form.type_verre.errors }}</div></div>
-      <div class="document-grid two-fields"><div>{{ form.epaisseur.label_tag }}{{ form.epaisseur }}{{ form.epaisseur.errors }}</div><div>{{ form.produits.label_tag }}{{ form.produits }}{{ form.produits.errors }}</div></div>
-    </div>
-    <div class="document-section"><div class="document-section-title"><span>03</span> Prestations et observations</div>
-      <div>{{ form.prestations.label_tag }}{{ form.prestations }}{{ form.prestations.errors }}</div><div>{{ form.commentaire.label_tag }}{{ form.commentaire }}{{ form.commentaire.errors }}</div>
-    </div>
+    <div class="document-section"><div class="document-section-title"><span>01</span> Client et projet</div><div class="document-grid two-fields"><div>{{ form.client.label_tag }}{{ form.client }}{{ form.client.errors }}</div><div>{{ form.titre.label_tag }}{{ form.titre }}<small class="text-muted">{{ form.titre.help_text }}</small>{{ form.titre.errors }}</div></div></div>
+    <div class="document-section"><div class="document-section-title"><span>02</span> Besoin à chiffrer</div><div>{{ form.description.label_tag }}{{ form.description }}{{ form.description.errors }}</div><div class="document-grid three-fields"><div>{{ form.dimensions.label_tag }}{{ form.dimensions }}{{ form.dimensions.errors }}</div><div>{{ form.quantite.label_tag }}{{ form.quantite }}{{ form.quantite.errors }}</div><div>{{ form.type_verre.label_tag }}{{ form.type_verre }}{{ form.type_verre.errors }}</div></div><div class="document-grid two-fields"><div>{{ form.epaisseur.label_tag }}{{ form.epaisseur }}{{ form.epaisseur.errors }}</div><div>{{ form.produits.label_tag }}{{ form.produits }}{{ form.produits.errors }}</div></div><div>{{ form.prestations.label_tag }}{{ form.prestations }}{{ form.prestations.errors }}</div></div>
+    <div class="document-section"><div class="document-section-title"><span>03</span> Chantier et délai</div><div>{{ form.chantier_adresse.label_tag }}{{ form.chantier_adresse }}{{ form.chantier_adresse.errors }}</div><div class="document-grid three-fields"><div>{{ form.contact_chantier.label_tag }}{{ form.contact_chantier }}{{ form.contact_chantier.errors }}</div><div>{{ form.telephone_chantier.label_tag }}{{ form.telephone_chantier }}{{ form.telephone_chantier.errors }}</div><div>{{ form.date_souhaitee.label_tag }}{{ form.date_souhaitee }}{{ form.date_souhaitee.errors }}</div></div><div class="document-grid three-fields"><div>{{ form.priorite.label_tag }}{{ form.priorite }}{{ form.priorite.errors }}</div><div class="form-check mt-4">{{ form.pose_souhaitee }} {{ form.pose_souhaitee.label_tag }}</div><div class="form-check mt-4">{{ form.prise_mesures_souhaitee }} {{ form.prise_mesures_souhaitee.label_tag }}</div></div></div>
+    <div class="document-section"><div class="document-section-title"><span>04</span> Note interne</div><div>{{ form.commentaire.label_tag }}{{ form.commentaire }}{{ form.commentaire.errors }}</div></div>
     <footer class="document-actions"><a href="{% url 'commercial:demandes' %}" class="btn btn-outline-secondary">Annuler</a><button class="btn btn-primary">Enregistrer la demande</button></footer>
   </form>
 </section>

@@ -15,6 +15,7 @@ urlpatterns = [
     path("commercial/", include("commercial.urls")),
     path("commandes/", include("commandes.urls")),
     path("production/", include("production.urls")),
+    path("impression/", include("impression.urls")),
     path("connexion/", auth_views.LoginView.as_view(template_name="login.html"), name="login"),
     path("deconnexion/", auth_views.LogoutView.as_view(), name="logout"),
 ]

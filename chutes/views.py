@@ -148,7 +148,7 @@ def rechercher(request):
     return render(request, "chutes/rechercher.html", {"form": form, "resultats": resultats})
 
 
-@login_required
+@permission_required("decoupes.plan_cut", raise_exception=True)
 def utiliser_depuis_recherche(request, chute_id):
     if request.method != "POST":
         return redirect("chutes:rechercher")

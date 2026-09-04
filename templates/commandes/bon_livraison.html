@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<article class="business-document print-document">
+  <header class="business-document-header"><div class="company-identity"><div class="document-mark">V</div><div><strong>VerreStock</strong><span>Expédition · Vitrerie</span></div></div><div class="document-title"><div class="page-eyebrow">Expédition</div><h1>BON DE LIVRAISON</h1><strong>{{ commande.reference }}</strong><span>{{ commande.get_statut_display }}</span></div></header>
+  <section class="document-meta"><div><span>Client</span><strong>{{ commande.client.nom }}</strong><p>{{ commande.client.contact|default:"" }}<br>{{ commande.client.adresse|linebreaksbr }}</p></div><div><span>Date</span><strong>{% now "d/m/Y" %}</strong><p>Référence devis : {{ commande.devis.reference|default:"—" }}</p></div></section>
+  <section class="document-table-wrap"><table class="table document-table"><thead><tr><th>Désignation</th><th>Dimensions</th><th class="text-end">Qté</th><th>Réception</th></tr></thead><tbody>{% for line in commande.lignes.all %}<tr><td><strong>{{ line.description }}</strong></td><td>{{ line.longueur|default:"—" }} × {{ line.largeur|default:"—" }} mm</td><td class="text-end">{{ line.quantite }}</td><td></td></tr>{% endfor %}</tbody></table></section>
+  <section class="document-bottom"><div class="document-notes"><h2>Observations</h2><p>{{ commande.commentaire|default:"Marchandise à vérifier à la réception."|linebreaksbr }}</p></div><div class="document-notes"><h2>Réception client</h2><p>Nom : ____________________<br><br>Signature et cachet : ____________________</p></div></section>
+  <footer class="document-footer">Bon de livraison {{ commande.reference }}</footer>
+</article>
+<div class="screen-only mt-3"><button class="btn btn-outline-secondary" onclick="window.print()">Imprimer le bon de livraison</button></div>
+{% endblock %}

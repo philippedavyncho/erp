@@ -1,6 +1,5 @@
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-
 from .models import Devis, HistoriqueDevis
 
 
@@ -27,8 +26,15 @@ def changer_statut_devis(devis, nouveau_statut, utilisateur, commentaire=""):
     devis = Devis.objects.select_for_update().get(pk=devis.pk)
     if devis.statut not in STATUTS_AUTORISES[nouveau_statut]:
         raise ValueError("Cette transition de statut n'est pas autorisée.")
+    # L'envoi est seulement commercial : l'atelier et le stock ne démarrent
+    # qu'après l'acceptation (validation) du client.
     ancien_statut = devis.statut
     devis.statut = nouveau_statut
     devis.save(update_fields=["statut"])
     HistoriqueDevis.objects.create(devis=devis, ancien_statut=ancien_statut, nouveau_statut=nouveau_statut, utilisateur=utilisateur, commentaire=commentaire)
+    if nouveau_statut == Devis.Statut.ACCEPTE and not hasattr(devis, "commande"):
+        # La validation client crée immédiatement le dossier de fabrication.
+        # Le responsable atelier garde ensuite la main sur le lancement physique.
+        from commandes.services import transformer_devis
+        transformer_devis(devis, utilisateur)
     return devis

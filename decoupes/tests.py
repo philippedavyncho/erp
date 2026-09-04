@@ -2,10 +2,15 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import SimpleTestCase, TestCase
 from chutes.models import Chute
+from clients.models import Client
+from commandes.models import Commande, LigneCommande
 from emplacements.models import Emplacement
+from panneaux.models import Panneau
+from production.services import creer_fiche
+from stock_panneaux.models import StockGrandPanneau
 from types_verres.models import Epaisseur, Teinte, TypeVerre
 from .models import Decoupe
-from .services import Rectangle, compatibles, leftovers, planifier_panneau
+from .services import Rectangle, appliquer_plan_panneau, compatibles, leftovers, planifier_panneau
 class DecoupeEngineTests(SimpleTestCase):
     def test_discards_small_waste(self):
         self.assertEqual(leftovers(Rectangle(1000, 800), Rectangle(950, 800)), [])
@@ -153,6 +158,74 @@ class OffcutReusePlanificationTests(TestCase):
         self.assertEqual(chute.etat, Chute.Etat.UTILISEE)
         self.assertFalse(Chute.objects.filter(pk=chute.pk, etat=Chute.Etat.DISPONIBLE).exists())
         self.assertNotContains(self.client.get("/stockage/"), chute.numero)
+
+    def test_search_cut_requires_cutting_permission(self):
+        user = get_user_model().objects.create_user("consultation", password="secret")
+        chute = Chute.objects.create(
+            longueur=700, largeur=500, type_verre=self.type_verre,
+            epaisseur=self.epaisseur, teinte=self.teinte, emplacement=self.emplacement,
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(f"/stockage/rechercher/decouper/{chute.pk}/", {
+            "longueur": 700, "largeur": 500,
+            "epaisseur": self.epaisseur.pk, "teinte": self.teinte.pk,
+        })
+
+        self.assertEqual(response.status_code, 403)
+        chute.refresh_from_db()
+        self.assertEqual(chute.etat, Chute.Etat.DISPONIBLE)
+
+    def test_an_exhausted_panel_cannot_be_cut_twice(self):
+        panneau = Panneau.objects.create(
+            reference="PAN-UNIQUE", longueur=1000, largeur=800,
+            type_verre=self.type_verre, epaisseur=self.epaisseur, teinte=self.teinte,
+        )
+        appliquer_plan_panneau(panneau, [(600, 500)], self.emplacement, self.user)
+
+        with self.assertRaisesMessage(ValueError, "n'est plus disponible"):
+            appliquer_plan_panneau(panneau, [(600, 500)], self.emplacement, self.user)
+
+
+class ProductionCutTraceabilityTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("operateur-production", password="secret")
+        self.user.user_permissions.add(Permission.objects.get(codename="plan_cut"))
+        self.client.force_login(self.user)
+        self.emplacement = Emplacement.objects.create(code="P-01-01", chariot="P", niveau=1, case=1)
+        self.type_verre = TypeVerre.objects.create(designation="Verre clair")
+        self.epaisseur = Epaisseur.objects.create(valeur="4.00")
+        self.teinte = Teinte.objects.create(designation="Clair")
+        commande = Commande.objects.create(client=Client.objects.create(nom="Client production"), statut=Commande.Statut.VALIDEE)
+        self.ligne = LigneCommande.objects.create(
+            commande=commande, description="Vitre comptoir", type_verre=self.type_verre,
+            epaisseur=self.epaisseur, longueur=700, largeur=500, quantite=2,
+        )
+        self.piece = creer_fiche(commande, self.user).pieces.get(ligne_commande=self.ligne)
+        StockGrandPanneau.objects.create(
+            reference="STOCK-PROD", materiau=self.type_verre, epaisseur=self.epaisseur,
+            teinte=self.teinte, longueur=1400, largeur=800, quantite_en_stock=1,
+        )
+
+    def test_production_piece_prefills_and_records_its_cuts(self):
+        response = self.client.get("/decoupes/", {"piece": self.piece.pk})
+        self.assertContains(response, "Production liée")
+        self.assertContains(response, "700 x 500")
+
+        response = self.client.post("/decoupes/", {
+            "piece": self.piece.pk,
+            "materiau": self.type_verre.pk,
+            "longueur_panneau": 1400,
+            "largeur_panneau": 800,
+            "epaisseur": "4.00",
+            "teinte": "Clair",
+            "emplacement": self.emplacement.pk,
+            "decoupes": "700 x 500\n700 x 500",
+            "action": "valider",
+        })
+
+        self.assertRedirects(response, "/stockage/")
+        self.assertEqual(Decoupe.objects.filter(piece_production=self.piece).count(), 2)
 
 
 class PlanificationViewTests(TestCase):

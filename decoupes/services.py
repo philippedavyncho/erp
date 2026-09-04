@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from django.db import transaction
 from chutes.models import Chute
 from emplacements.models import Emplacement
+from panneaux.models import Panneau
 from .models import Decoupe
 from mouvements.models import Mouvement
 from chutes.services import utiliser
@@ -99,13 +100,16 @@ def planifier_panneau(longueur: int, largeur: int, demandes: list[tuple[int, int
     return poses, restes
 
 @transaction.atomic
-def appliquer_plan_panneau(panneau, demandes: list[tuple[int, int]], emplacement, user=None):
+def appliquer_plan_panneau(panneau, demandes: list[tuple[int, int]], emplacement, user=None, piece_production=None):
+    panneau = Panneau.objects.select_for_update().get(pk=panneau.pk)
+    if panneau.statut != Panneau.Statut.DISPONIBLE:
+        raise ValueError("Ce panneau n'est plus disponible pour une d\u00e9coupe.")
     """Valide un plan prévisualisé et crée les découpes/chutes résultantes."""
     poses, restes = planifier_panneau(panneau.longueur, panneau.largeur, demandes)
     common = {"type_verre": panneau.type_verre, "epaisseur": panneau.epaisseur, "teinte": panneau.teinte}
     panneau.statut = "EPUISE"; panneau.save(update_fields=["statut"])
     for pose in poses:
-        Decoupe.objects.create(panneau=panneau, longueur=pose["longueur"], largeur=pose["largeur"], utilisateur=user)
+        Decoupe.objects.create(panneau=panneau, longueur=pose["longueur"], largeur=pose["largeur"], utilisateur=user, piece_production=piece_production)
     creees = [Chute.objects.create(**common, emplacement=emplacement, longueur=r.longueur, largeur=r.largeur, origine=f"Panneau {panneau.reference}") for r in restes]
     Mouvement.objects.create(utilisateur=user, action="DECOUPE_PANNEAU", objet=panneau.reference, commentaire=f"{len(poses)} découpe(s), {len(creees)} chute(s) créée(s)")
     return poses, creees
@@ -155,7 +159,15 @@ def previsualiser_utilisation_chute(chute, longueur: int, largeur: int) -> dict:
     return {"rotation": rotation, "restes": leftovers(Rectangle(chute.longueur, chute.largeur), coupe)}
 
 @transaction.atomic
-def consume(source, longueur: int, largeur: int, user=None, emplacement=None, stocker_restes=True):
+def consume(source, longueur: int, largeur: int, user=None, emplacement=None, stocker_restes=True, piece_production=None):
+    if isinstance(source, Chute):
+        source = Chute.objects.select_for_update().get(pk=source.pk)
+        if source.etat != Chute.Etat.DISPONIBLE:
+            raise ValueError("Cette chute n'est plus disponible pour une d\u00e9coupe.")
+    else:
+        source = source.__class__.objects.select_for_update().get(pk=source.pk)
+        if source.statut != "DISPONIBLE":
+            raise ValueError("Ce panneau n'est plus disponible pour une d\u00e9coupe.")
     """Consomme une chute/panneau et, sauf choix contraire, stocke les restes valides."""
     if not ((longueur <= source.longueur and largeur <= source.largeur) or (longueur <= source.largeur and largeur <= source.longueur)):
         raise ValueError("La decoupe demandee ne rentre pas dans la matiere selectionnee.")
@@ -169,7 +181,7 @@ def consume(source, longueur: int, largeur: int, user=None, emplacement=None, st
         utiliser(source.pk, user, f"Découpe {longueur}×{largeur}")
         source.refresh_from_db()
     else: source.statut="EPUISE"; source.save(update_fields=["statut"])
-    d=Decoupe.objects.create(**({"chute_source":source} if isinstance(source,Chute) else {"panneau":source}), longueur=longueur,largeur=largeur,utilisateur=user)
+    d=Decoupe.objects.create(**({"chute_source":source} if isinstance(source,Chute) else {"panneau":source}), longueur=longueur,largeur=largeur,utilisateur=user,piece_production=piece_production)
     emplacement_id=getattr(emplacement,"pk",emplacement)
     if stocker_restes:
         for r in restes: Chute.objects.create(**common, emplacement_id=emplacement_id, longueur=r.longueur, largeur=r.largeur, origine=f"Découpe {d.pk}")

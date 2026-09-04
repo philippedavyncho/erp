@@ -6,6 +6,7 @@ from django.utils.crypto import get_random_string
 
 from chutes.models import Chute
 from panneaux.models import Panneau
+from production.models import PieceProduction
 from types_verres.models import Epaisseur, Teinte, TypeVerre
 from .forms import DecoupeForm, PlanificationForm
 from .services import Rectangle, appliquer_plan_panneau, compatibles, consume, consume_batch, planifier_panneau, previsualiser_utilisation_chute
@@ -97,6 +98,15 @@ def _lire_affectations(request, suggestions):
 def planifier(request):
     chute_preselectionnee = None
     initial = {}
+    piece_production = None
+    piece_id = request.POST.get("piece") if request.method == "POST" else request.GET.get("piece")
+    if piece_id:
+        try:
+            piece_production = PieceProduction.objects.select_related(
+                "ligne_commande__type_verre", "ligne_commande__epaisseur", "fiche__commande"
+            ).get(pk=piece_id)
+        except (PieceProduction.DoesNotExist, ValueError):
+            piece_production = None
     chute_id = request.POST.get("chute_0") if request.method == "POST" else request.GET.get("chute")
     if chute_id:
         try:
@@ -119,6 +129,18 @@ def planifier(request):
             "decoupes": f"{longueur} x {largeur}",
         }
 
+    if request.method == "GET" and piece_production:
+        ligne = piece_production.ligne_commande
+        if not ligne.longueur or not ligne.largeur or not ligne.type_verre or not ligne.epaisseur:
+            messages.error(request, "Cette pièce doit avoir des dimensions, un type de verre et une épaisseur avant sa planification.")
+            return redirect("production:detail", pk=piece_production.fiche_id)
+        initial.update({
+            "materiau": ligne.type_verre_id,
+            "epaisseur": ligne.epaisseur.valeur,
+            "teinte": "Clair",
+            "decoupes": "\n".join(f"{ligne.longueur} x {ligne.largeur}" for _ in range(piece_production.quantite)),
+        })
+
     form = PlanificationForm(request.POST or None, initial=initial)
     plan = restes = None
     chute_principale = panneau_plan = None
@@ -133,6 +155,12 @@ def planifier(request):
         specifications = _specifications_plan(form.cleaned_data)
         suggestions = _suggestions_chutes(demandes, specifications)
         try:
+            if piece_production:
+                ligne = piece_production.ligne_commande
+                attendu = sorted(tuple(sorted((ligne.longueur, ligne.largeur))) for _ in range(piece_production.quantite))
+                recu = sorted(tuple(sorted(demande)) for demande in demandes)
+                if recu != attendu:
+                    raise ValueError("Les découpes doivent correspondre exactement aux dimensions et à la quantité de la pièce de production sélectionnée.")
             affectations = _lire_affectations(request, suggestions)
             consommations_integrales = {
                 index for index in affectations
@@ -169,6 +197,7 @@ def planifier(request):
                         _, nouveaux_restes = consume(
                             chute, longueur, largeur, request.user, emplacement,
                             stocker_restes=index not in consommations_integrales,
+                            piece_production=piece_production,
                         )
                         if index in consommations_integrales:
                             details_chutes.append(
@@ -190,7 +219,10 @@ def planifier(request):
                             teinte=panneau.teinte.designation, panneau_utilise=panneau,
                             utilisateur=request.user,
                         )
-                        _, chutes = appliquer_plan_panneau(panneau, demandes_panneau, emplacement, request.user)
+                        _, chutes = appliquer_plan_panneau(
+                            panneau, demandes_panneau, emplacement, request.user,
+                            piece_production=piece_production,
+                        )
                 nouvelles_chutes = len(restes_depuis_chutes) + len(chutes)
                 details_stock = [
                     f"{reste.longueur} × {reste.largeur} mm" for reste in restes_depuis_chutes
@@ -236,4 +268,5 @@ def planifier(request):
         "apercu_disponible": apercu_disponible,
         "chute_preselectionnee": chute_preselectionnee,
         "plans_chutes": plans_chutes,
+        "piece_production": piece_production,
     })

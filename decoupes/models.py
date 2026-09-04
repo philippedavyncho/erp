@@ -5,6 +5,7 @@ from chutes.models import Chute
 class Decoupe(models.Model):
     panneau=models.ForeignKey(Panneau,null=True,blank=True,on_delete=models.PROTECT,related_name="decoupes")
     chute_source=models.ForeignKey(Chute,null=True,blank=True,on_delete=models.PROTECT,related_name="decoupes")
+    piece_production=models.ForeignKey("production.PieceProduction",null=True,blank=True,on_delete=models.PROTECT,related_name="decoupes",help_text="Pièce de production réalisée par cette découpe.")
     longueur=models.PositiveIntegerField(); largeur=models.PositiveIntegerField(); cree_le=models.DateTimeField(auto_now_add=True); utilisateur=models.ForeignKey(settings.AUTH_USER_MODEL,null=True,blank=True,on_delete=models.SET_NULL)
     class Meta:
         ordering=["-cree_le"]

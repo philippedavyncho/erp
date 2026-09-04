@@ -20,9 +20,9 @@ class HistoriqueDevisInline(admin.TabularInline):
 
 @admin.register(DemandeDevis)
 class DemandeDevisAdmin(admin.ModelAdmin):
-    list_display = ("id", "client", "statut", "dimensions", "quantite", "type_verre", "cree_le", "cree_par")
-    list_filter = ("statut", "type_verre", "epaisseur", "cree_le")
-    search_fields = ("client__nom", "description", "produits", "dimensions", "prestations")
+    list_display = ("id", "titre", "client", "priorite", "date_souhaitee", "statut", "dimensions", "quantite", "cree_le")
+    list_filter = ("statut", "priorite", "pose_souhaitee", "type_verre", "epaisseur", "cree_le")
+    search_fields = ("titre", "client__nom", "description", "produits", "dimensions", "prestations", "chantier_adresse")
     autocomplete_fields = ("client", "type_verre", "epaisseur", "cree_par")
     readonly_fields = ("cree_le", "cree_par")
     date_hierarchy = "cree_le"

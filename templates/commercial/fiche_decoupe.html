@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<article class="business-document print-document">
+  <header class="business-document-header"><div class="company-identity"><div class="document-mark">V</div><div><strong>VerreStock</strong><span>Atelier · Plan de coupe</span></div></div><div class="document-title"><div class="page-eyebrow">Préparation</div><h1>FICHE DE DÉCOUPE</h1><strong>{{ devis.reference }}</strong><span>Client : {{ devis.client.nom }}</span></div></header>
+  <section class="document-table-wrap"><table class="table document-table"><thead><tr><th>Pièce</th><th>Dimensions</th><th>Qté</th><th>Matière</th><th>Source affectée</th><th>Découpe</th></tr></thead><tbody>{% for ligne in devis.lignes.all %}<tr><td><strong>{{ ligne.description }}</strong><small>{{ ligne.type_verre|default:"—" }} · {{ ligne.epaisseur|default:"—" }}</small></td><td>{{ ligne.longueur|default:"—" }} × {{ ligne.largeur|default:"—" }} mm</td><td>{{ ligne.quantite }}</td><td>{{ ligne.type_verre|default:"—" }}</td><td>{% if ligne.panneau_stock %}<strong>Panneau {{ ligne.panneau_stock.reference }}</strong><small>{{ ligne.panneau_stock.longueur }} × {{ ligne.panneau_stock.largeur }} mm</small>{% elif ligne.chute_stock %}<strong>Chute {{ ligne.chute_stock.numero }}</strong><small>{{ ligne.chute_stock.longueur }} × {{ ligne.chute_stock.largeur }} mm</small>{% else %}<span class="text-muted">À affecter</span>{% endif %}</td><td>{% if ligne.decoupe %}Oui{% else %}Non{% endif %}</td></tr>{% empty %}<tr><td colspan="6">Aucune pièce à découper.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="document-notes"><h2>Consignes</h2><p>Vérifier les dimensions et la matière avant coupe. Les sources affichées sont des suggestions de préparation ; seule la validation d'un plan de découpe entraîne une sortie de stock.</p></section>
+  <footer class="document-footer">Fiche de découpe · {{ devis.reference }} · {% now "d/m/Y" %}</footer>
+</article>
+<div class="screen-only mt-3"><button class="btn btn-outline-secondary" onclick="window.print()">Imprimer la fiche</button></div>
+{% endblock %}

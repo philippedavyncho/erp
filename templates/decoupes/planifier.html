@@ -11,9 +11,11 @@
     <form method="post" class="card">
       {% csrf_token %}
       {% if chute_preselectionnee %}<input type="hidden" name="chute_0" value="{{ chute_preselectionnee.pk }}">{% endif %}
+      {% if piece_production %}<input type="hidden" name="piece" value="{{ piece_production.pk }}">{% endif %}
       <div class="card-header-clean"><h2 class="h5 mb-0">Paramètres de découpe</h2></div>
       <div class="card-body p-4">
         {% if chute_preselectionnee %}<div class="alert alert-info">Chute sélectionnée : <strong>{{ chute_preselectionnee.numero }}</strong> — {{ chute_preselectionnee.longueur }} × {{ chute_preselectionnee.largeur }} mm. Vérifiez puis calculez le plan.</div>{% endif %}
+        {% if piece_production %}<div class="alert alert-info">Production liée : <strong>{{ piece_production.reference }}</strong> — commande {{ piece_production.fiche.commande.reference }}. Les {{ piece_production.quantite }} pièce(s) demandée(s) sont préremplies et chaque découpe sera enregistrée dans ce dossier.</div>{% endif %}
         {{ form.as_p }}
 
         {% if suggestions %}

@@ -48,6 +48,19 @@ def consommer_pour_planification(*, longueur, largeur, materiau, epaisseur, tein
 
 
 @transaction.atomic
+def consommer_pour_devis(panneau, quantite, reference_devis, utilisateur=None):
+    """Enregistre la sortie de grands panneaux affectés à un devis validé."""
+    if quantite <= 0:
+        raise ValueError("La quantité de panneaux doit être positive.")
+    panneau = StockGrandPanneau.objects.select_for_update().get(pk=panneau.pk)
+    if panneau.quantite_en_stock < quantite:
+        raise StockInsuffisantError(f"Stock insuffisant pour {panneau.reference} : {panneau.quantite_en_stock} panneau(x) disponible(s).")
+    panneau.quantite_en_stock = F("quantite_en_stock") - quantite
+    panneau.save(update_fields=["quantite_en_stock", "date_modification"])
+    MouvementStockGrandPanneau.objects.create(type=MouvementStockGrandPanneau.Type.SORTIE, panneau=panneau, quantite=quantite, origine=f"Devis validé {reference_devis}", utilisateur=utilisateur)
+
+
+@transaction.atomic
 def annuler_planification(planification, utilisateur=None):
     """Restitue une seule fois les panneaux consommés par une planification."""
     planification = PlanificationStock.objects.select_for_update().select_related("panneau_stock").get(pk=planification.pk)

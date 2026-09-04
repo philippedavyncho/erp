@@ -26,5 +26,12 @@ AUTH_PASSWORD_VALIDATORS = []
 LANGUAGE_CODE, TIME_ZONE, USE_I18N, USE_TZ = "fr-fr", "Europe/Paris", True, True
 STATIC_URL, STATICFILES_DIRS = "static/", [BASE_DIR / "static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# À renseigner avant mise en production : ces coordonnées apparaissent sur les devis.
+ENTREPRISE_NOM = os.environ.get("ERP_ENTREPRISE_NOM", "VerreStock")
+ENTREPRISE_ACTIVITE = os.environ.get("ERP_ENTREPRISE_ACTIVITE", "Vitrerie · Découpe · Façonnage")
+ENTREPRISE_ADRESSE = os.environ.get("ERP_ENTREPRISE_ADRESSE", "")
+ENTREPRISE_TELEPHONE = os.environ.get("ERP_ENTREPRISE_TELEPHONE", "")
+ENTREPRISE_EMAIL = os.environ.get("ERP_ENTREPRISE_EMAIL", "")
+ENTREPRISE_IDENTIFIANT = os.environ.get("ERP_ENTREPRISE_IDENTIFIANT", "")
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL = "dashboard:index", "login"
